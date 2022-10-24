@@ -12,7 +12,8 @@
   "dependencies": {
     "@types/node": "^18.0.6",
     "node-fetch": "^3.2.6",
-    "node-rpc": "github:AnoyingShulkerMC/node-rpc"
+    "wslib": "github:AnoyingShulkerMC/WsLibrary",
+    "WSLibrary": "github:AnoyingShulkerMC/WSLibrary"
   },
   "type": "module"
 }
