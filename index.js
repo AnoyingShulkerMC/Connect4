@@ -2,7 +2,10 @@ import chalk from "chalk"
 var publicSessions = []
 import Board from "./lib/Board.js"
 import keypress from "keypress"
+import {createInterface } from "node:readline/promises"
 var softdrop = false
+//var rlInt = createInterface({ input: process.stdin, output: process.stdout })
+const startingLevel = 10 /* await rlInt.question("Select Starting Level: ")*/
 var colors = [
   chalk.inverse.white,
   chalk.inverse.cyan,
@@ -34,7 +37,7 @@ Board.prototype.toString = function () {
 }
 var board = new Board(20, 10)
 board.nextPiece()
-board.setLevel(1)
+board.setLevel(startingLevel)
 keypress(process.stdin)
 process.stdin.setRawMode(true)
 process.stdin.on("keypress", (_, key) => {
@@ -64,7 +67,7 @@ process.stdin.on("keypress", (_, key) => {
     case "r":
       board = new Board(20, 10)
       board.nextPiece()
-      board.setLevel(1)
+      board.setLevel(startinglevel)
   }
   if (key.name == "c" && key.ctrl) process.exit()
 })
@@ -74,5 +77,5 @@ setInterval(() => {
   console.clear()
   let a = []
   for (let i = 0; i < board.next.length; i++)a.push(board.next[i].name)
-  console.log(board.toString() + "Next: " + a.join(",") + "\nHold: " + (board.hold == null ? "N/A" : board.hold.name) + "\nMoves Left: " + board.piece.moves + "\nLevel: " + board.level)
+  console.log(board.toString() + "Next: " + a.join(",") + "\nHold: " + (board.hold == null ? "N/A" : board.hold.name) + "\nMoves Left: " + board.piece.moves + "\nLevel: " + board.level + ` (${board.dropRate} ms/cell)`)
 }, 100)
