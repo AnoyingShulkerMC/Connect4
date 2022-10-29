@@ -2,14 +2,14 @@ import chalk from "chalk"
 var publicSessions = []
 import Board from "./lib/Board.js"
 import keypress from "keypress"
-import {createInterface } from "node:readline/promises"
+//import {createInterface } from "node:readline/promises"
 var softdrop = false
 //var rlInt = createInterface({ input: process.stdin, output: process.stdout })
-const startingLevel = 10 /* await rlInt.question("Select Starting Level: ")*/
+const startingLevel = 1 //await rlInt.question("Select Starting Level: ")
 var colors = [
   chalk.inverse.white,
   chalk.inverse.cyan,
-  chalk.inverse.yellow,
+  chalk.inverse.yellowBright,
   chalk.inverse.magenta,
   chalk.inverse.green,
   chalk.inverse.red,
@@ -26,6 +26,10 @@ Board.prototype.toString = function () {
         this.piece.x <= col && col < this.piece.x + this.piece.tetro.length &&
         (this.board.length - this.piece.y - 1) <= row && row < (this.board.length - this.piece.y - 1) + this.piece.tetro.length && 
          this.piece.tetro[row - (this.board.length - this.piece.y - 1)][col - this.piece.x] !== 0) {
+        if(this.elapsed < 125 || (375 < this.elapsed && this.elapsed < 500)) {
+          ret += "  "
+          continue
+        }
         ret += colors[this.piece.tetro[row - (this.board.length - this.piece.y - 1)][col - this.piece.x]]("  ")
         continue
       }
@@ -41,14 +45,17 @@ board.setLevel(startingLevel)
 keypress(process.stdin)
 process.stdin.setRawMode(true)
 process.stdin.on("keypress", (_, key) => {
-
+  if(!key) return
   switch (key.name) {
+    case "a":
     case "left":
       board.piece.shift(-1)
       break;
+    case "d":
     case "right":
       board.piece.shift(1)
       break;
+    case "s":
     case "down":
       softdrop = true
       break
@@ -58,6 +65,8 @@ process.stdin.on("keypress", (_, key) => {
     case "z":
       board.rotCCW()
       break;
+    case "w":
+    case "up":
     case "x":
       board.rotCC()
       break;
@@ -67,7 +76,7 @@ process.stdin.on("keypress", (_, key) => {
     case "r":
       board = new Board(20, 10)
       board.nextPiece()
-      board.setLevel(startinglevel)
+      board.setLevel(startingLevel)
   }
   if (key.name == "c" && key.ctrl) process.exit()
 })
@@ -78,4 +87,4 @@ setInterval(() => {
   let a = []
   for (let i = 0; i < board.next.length; i++)a.push(board.next[i].name)
   console.log(board.toString() + "Next: " + a.join(",") + "\nHold: " + (board.hold == null ? "N/A" : board.hold.name) + "\nMoves Left: " + board.piece.moves + "\nLevel: " + board.level + ` (${board.dropRate} ms/cell)`)
-}, 100)
+},100)
