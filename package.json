@@ -1,10 +1,11 @@
 {
-  "name": "nodejs",
+  "name": "tetris",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/tetris.cjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack"
   },
   "keywords": [],
   "author": "",
@@ -12,11 +13,14 @@
   "dependencies": {
     "@types/node": "18.0.6",
     "chalk": "5.1.2",
-    "node-fetch": "3.2.6",
-    "wslib": "github:AnoyingShulkerMC/WsLibrary",
-    "WSLibrary": "github:AnoyingShulkerMC/WSLibrary",
     "keypress": "0.2.1",
-    "uiohook-napi": "1.5.0"
+    "node-fetch": "3.2.6",
+    "uiohook-napi": "1.5.0",
+    "wslib": "github:AnoyingShulkerMC/WsLibrary",
+    "WSLibrary": "github:AnoyingShulkerMC/WSLibrary"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "webpack-cli": "^4.10.0"
+  }
 }

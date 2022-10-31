@@ -1,14 +1,25 @@
 import chalk from "chalk"
-var publicSessions = []
+var uIOhook;
+var UiohookKey;
 import Board from "./lib/Board.js"
 import keypress from "keypress"
-import { uIOhook, UiohookKey } from 'uiohook-napi'
+import { EventEmitter } from "node:events";
+try {
+  ({ uIOhook, UiohookKey } = await import('uiohook-napi'))
+} catch {
+  uIOhook = new EventEmitter() // placeholder
+}
 var softdrop = false
 var messages = []
 var elapsed = 0
 const refreshRate = 10
 //var rlInt = createInterface({ input: process.stdin, output: process.stdout })
 const startingLevel = 10 //await rlInt.question("Select Starting Level: ")
+var gameOver = false
+var menuItem = 0
+const boardOptions = {
+  lock: 500
+}
 var colors = [
   chalk.inverse.white,
   chalk.inverse.cyan,
@@ -40,7 +51,7 @@ Board.prototype.toString = function () {
         this.piece.x <= col && col < this.piece.x + this.piece.tetro.length &&
         (this.board.length - this.piece.y - 1) <= row && row < (this.board.length - this.piece.y - 1) + this.piece.tetro.length && 
         this.piece.tetro[row - (this.board.length - this.piece.y - 1)][col - this.piece.x] !== 0) {
-        if(this.elapsed == 1 && (this.piece.tSpin || this.piece.miniTSpin)) {
+        if(Math.floor(this.elapsed/100) % 2 == 0 && (this.piece.tSpin || this.piece.miniTSpin)) {
           ret += "  "
           continue
         } // T-Spin animation
@@ -59,50 +70,67 @@ Board.prototype.toString = function () {
       
       ret += colors[this.board[row][col]]("  ")
     }
-    ret += (row == this.length - 1 ? "\n" + "--".repeat(this.width) : "") + "\n"
+    ret += (row == this.length - 1 ? "\n" + "-".repeat(this.width) : "") + "\n"
   }
   return ret
 }
-var board = new Board(20, 10)
+var board = new Board(20, 10, boardOptions)
 board.nextPiece()
 board.setLevel(startingLevel)
-keypress(process.stdin)
 process.stdin.setRawMode(true)
-uIOhook.on("keydown", (key) => {
+keypress(process.stdin)
+process.stdin.on("keypress", (_, key) => {
   if (!key) return
-  switch (key.keycode) {
-    case UiohookKey.A:
-    case UiohookKey.ArrowLeft:
+  switch (key.name) {
+    case "a":
+    case "left":
       board.piece.shift(-1)
       break;
-    case UiohookKey.D:
-    case UiohookKey.ArrowRight:
+    case "d":
+    case "right":
       board.piece.shift(1)
       break;
-    case UiohookKey.S:
-    case UiohookKey.ArrowDown:
+    case "s":
+    case "down":
+      if (board.gameOver) menuItem = Math.min(menuItem + 1, 1)
       softdrop = true
       break
-    case UiohookKey.Space:
+    case "space":
+
+      if (board.gameOver) {
+        if (menuItem == 0) {// Restart
+
+          board = new Board(20, 10, boardOptions)
+          board.nextPiece()
+          board.setLevel(startingLevel)
+        } else {
+          process.exit(0)
+        }
+      }
       board.hardDrop()
       break;
-    case UiohookKey.Z:
+    case "z":
       board.rotCCW()
       break;
-    case UiohookKey.W:
-    case UiohookKey.ArrowUp:
-    case UiohookKey.X:
+    case "w":
+    case "up":
+    case "x":
+      if (board.gameOver) menuItem = Math.max(menuItem - 1, 0)
       board.rotCC()
       break;
-    case UiohookKey.C:
+    case "c":
       board.holdPiece()
       break;
-    case UiohookKey.R:
-      board = new Board(20, 10)
+    case "r":
+      board = new Board(20, 10, boardOptions)
       board.nextPiece()
       board.setLevel(startingLevel)
+      break
   }
-  if (key.keycode == UiohookKey.C && key.ctrlKey) process.exit(1)
+  if (key.name == "c" && key.ctrl) {
+    process.exit(0)
+  }
+  process.stdout.write("\x08")
 })
 uIOhook.on("keyup", (key) => {
   if (!key) return
@@ -114,17 +142,49 @@ uIOhook.on("keyup", (key) => {
   }
 })
 uIOhook.start()
+function createProgressbar(width, prog, max) {
+  var ret = "["
+  for (var i = 0; i < width; i++) {
+    if (Math.floor(width * prog / max) >= i) ret += "="
+    else ret += " "
+  }
+  return ret += "]"
+}
 setInterval(() => {
+  process.stdout.cursorTo(0, 0)
   elapsed += refreshRate
-  messages = messages.filter(a => a[1] + refreshRate > elapsed)
+  messages = messages.filter(a => a[1] + 1000 > elapsed)
   console.clear()
-  var state = board.update(refreshRate, softdrop)
-  var msg = ""
-  if (state.flags & 1) msg += "T-spin " // Tspin
-  else if (state.flags & 2) msg += "Mini T-Spin "
-  msg += ["", "Single", "Double", "Triple", "Tetris"][state.lines]
-  if(msg !== "") messages.push([msg, elapsed])
+  if (board.gameOver) {
+    return console.log(`Game Over 
+Score: ${board.score}
+Lines Cleared: ${board.linesCleared}
+Level Reached: ${board.level}
+Press [SPACE] to select
+
+${menuItem == 0 ? chalk.inverse.whiteBright("Restart") : "Restart"}
+${ menuItem == 1 ? chalk.inverse.whiteBright("Quit") : "Quit"}`)
+  }
+  board.update(refreshRate, softdrop)
+  for (var i = 0; i < board.lastStates.length; i++) {
+    var state = board.lastStates.shift()
+    var msg = ""
+    if (state.flags & 1) msg += "T-spin " // Tspin
+    else if (state.flags & 2) msg += "Mini T-Spin "
+    msg += ["", "Single ", "Double ", "Triple ", "Tetris "][state.lines] + (state.scoreIncrease !== 0 ? `(+${state.flags & 4 ? state.scoreIncrease * (2 / 3) : state.scoreIncrease})` : "")
+    if (msg !== "") messages.push([msg, elapsed])
+    if ((state.flags & 4) && state.lines !== 0) messages.push([`Back to Back (+${state.scoreIncrease * (1 / 3)})`, elapsed])
+    
+  }
   let a = []
   for (let i = 0; i < board.next.length; i++)a.push(board.next[i].name)
-  console.log(board.toString() + "Next: " + a.join(",") + "\nHold: " + (board.hold == null ? "N/A" : board.hold.name) + "\nMoves Left: " + board.piece.moves + "\nLevel: " + board.level + ` (${board.dropRate} ms/cell)` + "\nScore: " + board.score.toString() + `\n${messages.reduce((p, c) => p + c[0], "" )}`)
+  console.log(board.toString() +
+    "Next: " + a.join(",") +
+    "\nHold: " + (board.hold == null ? "N/A" : board.hold.name) +
+    "\nLevel: " + board.level + ` (${board.dropRate} ms/cell)` +
+    "\nLines Cleared: " + board.linesCleared +
+    "\nScore: " + board.score.toString() +
+    `\n${" " + " *".repeat(board.piece.moves > 0 ? board.piece.moves : 0)}` +
+    `\n${createProgressbar(31, board.piece.lock, board.lockDelay)} ${board.lockDelay}ms` +
+    `\n${messages.reduce((p, c) => p + "\n" + c[0], "")}`)
 },refreshRate)
