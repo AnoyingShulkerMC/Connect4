@@ -8,11 +8,12 @@ try {
   ({ uIOhook, UiohookKey } = await import('uiohook-napi'))
 } catch {
   uIOhook = new EventEmitter() // placeholder
+  uIOhook.start = () => {}
 }
 var softdrop = false
 var messages = []
 var elapsed = 0
-const refreshRate = 10
+const refreshRate = 100
 //var rlInt = createInterface({ input: process.stdin, output: process.stdout })
 const startingLevel = 10 //await rlInt.question("Select Starting Level: ")
 var gameOver = false
