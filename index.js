@@ -15,7 +15,7 @@ try {
 var softdrop = false
 var messages = []
 var elapsed = 0
-const refreshRate = 100
+const refreshRate = 50
 //var rlInt = createInterface({ input: process.stdin, output: process.stdout })
 const startingLevel = 10 //await rlInt.question("Select Starting Level: ")
 var gameOver = false
