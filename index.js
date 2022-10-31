@@ -10,12 +10,12 @@ try {
   uIoHookInitialized = true
 } catch {
   uIOhook = new EventEmitter() // placeholder
-  uIOhook.start = () => {}
+  uIOhook.start = () => { }
 }
 var softdrop = false
 var messages = []
 var elapsed = 0
-const refreshRate = 100
+const refreshRate = 50
 //var rlInt = createInterface({ input: process.stdin, output: process.stdout })
 const startingLevel = 10 //await rlInt.question("Select Starting Level: ")
 var gameOver = false
@@ -45,38 +45,6 @@ var ghostPieceColors = [
   chalk.hex("#FFD380").inverse,
   chalk.inverse.grey
 ]
-Board.prototype.toString = function () {
-  var ret = ""
-  for (var row = 0; row < this.board.length; row++) {
-    if(row < board.length - 1) continue
-    for (var col = 0; col < this.board[row].length; col++) {
-      if (this.piece &&
-        this.piece.x <= col && col < this.piece.x + this.piece.tetro.length &&
-        (this.board.length - this.piece.y - 1) <= row && row < (this.board.length - this.piece.y - 1) + this.piece.tetro.length && 
-        this.piece.tetro[row - (this.board.length - this.piece.y - 1)][col - this.piece.x] !== 0) {
-        if(Math.floor(this.elapsed/100) % 2 == 0 && (this.piece.tSpin || this.piece.miniTSpin)) {
-          ret += "  "
-          continue
-        } // T-Spin animation
-        ret += colors[this.piece.tetro[row - (this.board.length - this.piece.y - 1)][col - this.piece.x]]("  ")
-        continue
-      } // draw falling piece
-
-      if (this.piece &&
-        this.piece.x <= col && col < this.piece.x + this.piece.tetro.length &&
-        (this.board.length - this.piece.y + this.piece.getDrop(20) - 1) <= row && row < (this.board.length - this.piece.y + this.piece.getDrop(20) - 1) + this.piece.tetro.length &&
-        this.piece.tetro[row - (this.board.length - this.piece.y + this.piece.getDrop(20) - 1)][col - this.piece.x] !== 0 &&
-        this.piece.getDrop(20) !== 0) {
-        ret += ghostPieceColors[this.piece.tetro[row - (this.board.length - this.piece.y + this.piece.getDrop(20) - 1)][col - this.piece.x]]("  ")
-        continue
-      } // draw ghost piece
-      
-      ret += colors[this.board[row][col]]("  ")
-    }
-    ret += (row == this.length - 1 ? "\n" + "-".repeat(this.width) : "") + "\n"
-  }
-  return ret
-}
 var board = new Board(20, 10, boardOptions)
 board.nextPiece()
 board.setLevel(startingLevel)
@@ -105,7 +73,7 @@ process.stdin.on("keypress", (_, key) => {
 
           board = new Board(20, 10, boardOptions)
           board.nextPiece()
-          board.setLevel(startingLevel)
+          return board.setLevel(startingLevel)
         } else {
           process.exit(0)
         }
@@ -131,9 +99,9 @@ process.stdin.on("keypress", (_, key) => {
       break
   }
   if (key.name == "c" && key.ctrl) {
+    //process.stdout.write('\x1bc')
     process.exit(0)
   }
-  process.stdout.write("\x08")
 })
 uIOhook.on("keyup", (key) => {
   if (!key) return
@@ -153,11 +121,63 @@ function createProgressbar(width, prog, max) {
   }
   return ret += "]"
 }
-setInterval(() => {
+function sleep(a) {
+  return new Promise(r => setTimeout(r, a))
+}
+async function addGameState() {
+  
+  let a = []
+  for (let i = 0; i < board.next.length; i++)a.push(board.next[i].name)
+  process.stdout.cursorTo(0, 0)
+  for (var row = 0; row < board.board.length; row++) {
+    //await sleep(1000)
+    var ret = ""
+    if (row < board.length - 1) continue
+    for (var col = 0; col < board.board[row].length; col++) {
+      if (board.piece &&
+        board.piece.x <= col && col < board.piece.x + board.piece.tetro.length &&
+        (board.board.length - board.piece.y - 1) <= row && row < (board.board.length - board.piece.y - 1) + board.piece.tetro.length &&
+        board.piece.tetro[row - (board.board.length - board.piece.y - 1)][col - board.piece.x] !== 0) {
+        if (Math.floor(board.elapsed / 100) % 2 == 0 && (board.piece.tSpin || board.piece.miniTSpin)) {
+          ret += "  "
+          continue
+        } // T-Spin animation
+        ret += colors[board.piece.tetro[row - (board.board.length - board.piece.y - 1)][col - board.piece.x]]("  ")
+        continue
+      } // draw falling piece
+
+      if (board.piece &&
+        board.piece.x <= col && col < board.piece.x + board.piece.tetro.length &&
+        (board.board.length - board.piece.y + board.piece.getDrop(20) - 1) <= row && row < (board.board.length - board.piece.y + board.piece.getDrop(20) - 1) + board.piece.tetro.length &&
+        board.piece.tetro[row - (board.board.length - board.piece.y + board.piece.getDrop(20) - 1)][col - board.piece.x] !== 0 &&
+        board.piece.getDrop(20) !== 0) {
+        ret += ghostPieceColors[board.piece.tetro[row - (board.board.length - board.piece.y + board.piece.getDrop(20) - 1)][col - board.piece.x]]("  ")
+        continue
+      } // draw ghost piece
+
+      ret += colors[board.board[row][col]]("  ")
+    }
+    //ret += (row == board.length - 1 ? "\n" + "-".repeat(board.width) : "") + "\n"
+    
+    process.stdout.clearLine(0)
+    process.stdout.write(ret)
+    process.stdout.cursorTo(0)
+    process.stdout.moveCursor(0, 1)
+  }
+  process.stdout.clearScreenDown()
+  process.stdout.write("Next: " + a.join(",") +
+    "\nHold: " + (board.hold == null ? "N/A" : board.hold.name) +
+    "\nLevel: " + board.level + ` (${board.dropRate} ms/cell)` +
+    "\nLines Cleared: " + board.linesCleared +
+    "\nScore: " + board.score.toString() +
+    `\n${" " + " *".repeat(board.piece.moves > 0 ? board.piece.moves : 0)}` +
+    `\n${createProgressbar(31, board.piece.lock, board.lockDelay)} ${board.lockDelay}ms` +
+    `\n${messages.reduce((p, c) => p + "\n" + c[0], "")}`)
+}
+setInterval(async () => {
   process.stdout.cursorTo(0, 0)
   elapsed += refreshRate
   messages = messages.filter(a => a[1] + 1000 > elapsed)
-  console.clear()
   if (board.gameOver) {
     return console.log(`Game Over 
 Score: ${board.score}
@@ -166,7 +186,7 @@ Level Reached: ${board.level}
 Press [SPACE] to select
 
 ${menuItem == 0 ? chalk.inverse.whiteBright("Restart") : "Restart"}
-${ menuItem == 1 ? chalk.inverse.whiteBright("Quit") : "Quit"}`)
+${menuItem == 1 ? chalk.inverse.whiteBright("Quit") : "Quit"}`)
   }
   board.update(refreshRate, softdrop)
   if (!uIoHookInitialized) softdrop = false
@@ -178,17 +198,7 @@ ${ menuItem == 1 ? chalk.inverse.whiteBright("Quit") : "Quit"}`)
     msg += ["", "Single ", "Double ", "Triple ", "Tetris "][state.lines] + (state.scoreIncrease !== 0 ? `(+${state.flags & 4 ? state.scoreIncrease * (2 / 3) : state.scoreIncrease})` : "")
     if (msg !== "") messages.push([msg, elapsed])
     if ((state.flags & 4) && state.lines !== 0) messages.push([`Back to Back (+${state.scoreIncrease * (1 / 3)})`, elapsed])
-    
+
   }
-  let a = []
-  for (let i = 0; i < board.next.length; i++)a.push(board.next[i].name)
-  console.log(board.toString() +
-    "Next: " + a.join(",") +
-    "\nHold: " + (board.hold == null ? "N/A" : board.hold.name) +
-    "\nLevel: " + board.level + ` (${board.dropRate} ms/cell)` +
-    "\nLines Cleared: " + board.linesCleared +
-    "\nScore: " + board.score.toString() +
-    `\n${" " + " *".repeat(board.piece.moves > 0 ? board.piece.moves : 0)}` +
-    `\n${createProgressbar(31, board.piece.lock, board.lockDelay)} ${board.lockDelay}ms` +
-    `\n${messages.reduce((p, c) => p + "\n" + c[0], "")}`)
-},refreshRate)
+  addGameState()
+}, refreshRate)
