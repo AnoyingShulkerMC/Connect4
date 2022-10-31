@@ -1,11 +1,13 @@
 import chalk from "chalk"
 var uIOhook;
 var UiohookKey;
+var uIoHookInitialized = false
 import Board from "./lib/Board.js"
 import keypress from "keypress"
 import { EventEmitter } from "node:events";
 try {
   ({ uIOhook, UiohookKey } = await import('uiohook-napi'))
+  uIoHookInitialized = true
 } catch {
   uIOhook = new EventEmitter() // placeholder
 }
@@ -166,6 +168,7 @@ ${menuItem == 0 ? chalk.inverse.whiteBright("Restart") : "Restart"}
 ${ menuItem == 1 ? chalk.inverse.whiteBright("Quit") : "Quit"}`)
   }
   board.update(refreshRate, softdrop)
+  if (!uIoHookInitialized) softdrop = false
   for (var i = 0; i < board.lastStates.length; i++) {
     var state = board.lastStates.shift()
     var msg = ""
