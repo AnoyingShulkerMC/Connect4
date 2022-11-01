@@ -17,12 +17,13 @@ var messages = []
 var elapsed = 0
 const refreshRate = 50
 //var rlInt = createInterface({ input: process.stdin, output: process.stdout })
-const startingLevel = 10 //await rlInt.question("Select Starting Level: ")
+const startingLevel = 20 //await rlInt.question("Select Starting Level: ")
+const headStart = false
 var gameOver = false
 var menuItem = 0
 const boardOptions = {
   lock: 500,
-  linesCleared: 0
+  linesCleared: headStart ? startingLevel * 10 : 0
 }
 var colors = [
   chalk.inverse.white,
