@@ -17,7 +17,7 @@ var messages = []
 var elapsed = 0
 const refreshRate = 50
 //var rlInt = createInterface({ input: process.stdin, output: process.stdout })
-const startingLevel = 30 //await rlInt.question("Select Starting Level: ")
+const startingLevel = 1 //await rlInt.question("Select Starting Level: ")
 const headStart = true
 var gameOver = false
 var menuItem = 0
@@ -130,7 +130,7 @@ function createProgressbar(width, prog, max) {
 function sleep(a) {
   return new Promise(r => setTimeout(r, a))
 }
-async function addGameState() {
+function addGameState() {
   
   let a = []
   for (let i = 0; i < board.next.length; i++)a.push(board.next[i].name)
@@ -205,7 +205,7 @@ async function addGameState() {
   process.stdout.write(stats)
 }
 process.stdout.write("\x1b[?25l")
-setInterval(async () => {
+setInterval(() => {
   process.stdout.cursorTo(0, 0)
   elapsed += refreshRate
   messages = messages.filter(a => a[1] + 1000 > elapsed)
