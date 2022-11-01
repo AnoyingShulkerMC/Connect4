@@ -22,7 +22,7 @@ var gameOver = false
 var menuItem = 0
 const boardOptions = {
   lock: 500,
-  linesCleared: 200
+  linesCleared: 0
 }
 var colors = [
   chalk.inverse.white,
