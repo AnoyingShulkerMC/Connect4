@@ -17,11 +17,12 @@ var messages = []
 var elapsed = 0
 const refreshRate = 50
 //var rlInt = createInterface({ input: process.stdin, output: process.stdout })
-const startingLevel = 10 //await rlInt.question("Select Starting Level: ")
+const startingLevel = 20 //await rlInt.question("Select Starting Level: ")
 var gameOver = false
 var menuItem = 0
 const boardOptions = {
-  lock: 500
+  lock: 500,
+  linesCleared: 200
 }
 var colors = [
   chalk.inverse.white,
@@ -133,9 +134,16 @@ async function addGameState() {
   let a = []
   for (let i = 0; i < board.next.length; i++)a.push(board.next[i].name)
   process.stdout.cursorTo(0, 0)
+
+  var borderFn = a => a
+  if (board.inImminentDanger) {
+    borderFn = Math.floor(board.elapsed / 100) % 2 == 0 ? chalk.inverse.hex("#FFA500") : chalk.inverse.red
+  } else if (board.inDanger) {
+    borderFn = chalk.inverse.red
+  }
   for (var row = 0; row < board.board.length; row++) {
-    //await sleep(1000)
-    var ret = ""
+
+    var ret = borderFn("  ")
     if (row < board.length - 1) continue
     for (var col = 0; col < board.board[row].length; col++) {
       if (board.piece &&
@@ -159,11 +167,12 @@ async function addGameState() {
         continue
       } // draw ghost piece
       if (row < board.length && board.board[row][col] == 0) {
-        ret += "  "
+        ret += borderFn("  ")
         continue
       }
       ret += colors[board.board[row][col]]("  ")
     }
+    ret += borderFn("  ")
     //ret += (row == board.length - 1 ? "\n" + "-".repeat(board.width) : "") + "\n"
     
     process.stdout.clearLine(0)
@@ -171,15 +180,28 @@ async function addGameState() {
     process.stdout.cursorTo(0)
     process.stdout.moveCursor(0, 1)
   }
-  process.stdout.clearScreenDown()
-  process.stdout.write("Next: " + a.join(",") +
+  process.stdout.clearLine(0)
+
+  process.stdout.write(borderFn("  ").repeat(board.width + 2))
+  process.stdout.cursorTo(0)
+  process.stdout.moveCursor(0, 1)
+  var stats = "Next: " + a.join(",") +
     "\nHold: " + (board.hold == null ? "N/A" : board.hold.name) +
     "\nLevel: " + board.level + ` (${board.dropRate} ms/cell)` +
     "\nLines Cleared: " + board.linesCleared +
     "\nScore: " + board.score.toString() +
     `\n${" " + " *".repeat(board.piece.moves > 0 ? board.piece.moves : 0)}` +
     `\n${createProgressbar(31, board.piece.lock, board.lockDelay)} ${board.lockDelay}ms` +
-    `\n${messages.reduce((p, c) => p + "\n" + c[0], "")}`)
+    `\n${messages.reduce((p, c) => p + "\n" + c[0], "")}`
+  
+  if (board.inImminentDanger) {
+    stats = Math.floor(board.elapsed/100) % 2 == 0 ? chalk.hex("#FFA500")(stats) : chalk.red(stats)
+  } else if (board.inDanger) {
+    stats = chalk.red(stats)
+  }
+
+  process.stdout.clearScreenDown()
+  process.stdout.write(stats)
 }
 process.stdout.write("\x1b[?25l")
 setInterval(async () => {
