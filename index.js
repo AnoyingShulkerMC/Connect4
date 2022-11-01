@@ -159,8 +159,8 @@ async function addGameState() {
         continue
       } // draw ghost piece
       if (row < board.length && board.board[row][col] == 0) {
-        colors[board.board[row][col]]("  ")
-          continue
+        ret += "  "
+        continue
       }
       ret += colors[board.board[row][col]]("  ")
     }
