@@ -103,6 +103,10 @@ process.stdin.on("keypress", (_, key) => {
     process.exit(0)
   }
 })
+process.on("exit", _ => {
+
+  process.stdout.write("\x1b[?25h")
+})
 uIOhook.on("keyup", (key) => {
   if (!key) return
   switch (key.keycode) {
@@ -154,7 +158,10 @@ async function addGameState() {
         ret += ghostPieceColors[board.piece.tetro[row - (board.board.length - board.piece.y + board.piece.getDrop(20) - 1)][col - board.piece.x]]("  ")
         continue
       } // draw ghost piece
-
+      if (row < this.length && board.board[row][col] == 0) {
+        colors[board.board[row][col]]("  ")
+          continue
+      }
       ret += colors[board.board[row][col]]("  ")
     }
     //ret += (row == board.length - 1 ? "\n" + "-".repeat(board.width) : "") + "\n"
@@ -174,6 +181,7 @@ async function addGameState() {
     `\n${createProgressbar(31, board.piece.lock, board.lockDelay)} ${board.lockDelay}ms` +
     `\n${messages.reduce((p, c) => p + "\n" + c[0], "")}`)
 }
+process.stdout.write("\x1b[?25l")
 setInterval(async () => {
   process.stdout.cursorTo(0, 0)
   elapsed += refreshRate
@@ -195,7 +203,7 @@ ${menuItem == 1 ? chalk.inverse.whiteBright("Quit") : "Quit"}`)
     var msg = ""
     if (state.flags & 1) msg += "T-spin " // Tspin
     else if (state.flags & 2) msg += "Mini T-Spin "
-    msg += ["", "Single ", "Double ", "Triple ", "Tetris "][state.lines] + (state.scoreIncrease !== 0 ? `(+${state.flags & 4 ? state.scoreIncrease * (2 / 3) : state.scoreIncrease})` : "")
+    msg += ["", "Single ", "Double ", "Triple ", "Tetris "][state.lines] + (state.scoreIncrease !== 0 ? `(+${((state.flags & 4) && state.lines !== 0) ? state.scoreIncrease * (2 / 3) : state.scoreIncrease})` : "")
     if (msg !== "") messages.push([msg, elapsed])
     if ((state.flags & 4) && state.lines !== 0) messages.push([`Back to Back (+${state.scoreIncrease * (1 / 3)})`, elapsed])
 
