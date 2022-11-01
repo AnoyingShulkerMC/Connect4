@@ -158,7 +158,7 @@ async function addGameState() {
         ret += ghostPieceColors[board.piece.tetro[row - (board.board.length - board.piece.y + board.piece.getDrop(20) - 1)][col - board.piece.x]]("  ")
         continue
       } // draw ghost piece
-      if (row < this.length && board.board[row][col] == 0) {
+      if (row < board.length && board.board[row][col] == 0) {
         colors[board.board[row][col]]("  ")
           continue
       }
