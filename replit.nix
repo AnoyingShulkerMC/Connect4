@@ -1,6 +1,7 @@
 { pkgs }: {
 	deps = [
-		pkgs.python38
+		pkgs.nano
+  pkgs.python38
   pkgs.nodejs-16_x
         pkgs.nodePackages.typescript-language-server
         pkgs.yarn

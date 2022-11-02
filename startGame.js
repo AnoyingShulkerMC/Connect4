@@ -37,7 +37,7 @@ var ghostPieceColors = [
   chalk.hex("#FFD380").inverse,
   chalk.inverse.grey
 ]
-export default function startGame({ refreshRate = 50, boardOptions = {}, startingLevel = 1, headStart = false } = {}) {
+export default function startGame({ refreshRate = 50, boardOptions = {}, startingLevel = 1, headStart = false, addInfo = (board) => "", customGameOver = (board) => false, inDanger = (board) => false , inImminentDanger = (board) => false} = {}) {
   return new Promise(resolve => {
     var finished = false
     var board = new Board(20, 10, boardOptions)
@@ -50,7 +50,6 @@ export default function startGame({ refreshRate = 50, boardOptions = {}, startin
       process.stdin.removeListener("keypress", onKey)
       uIOhook.removeListener("keyup", onKeyUp)
       process.stdout.write("\x1b[?25h")
-      process.stdin.pause()
       process.stdin.setRawMode(false)
     }
     board.nextPiece()
@@ -150,8 +149,10 @@ export default function startGame({ refreshRate = 50, boardOptions = {}, startin
 
       var borderFn = a => a
       if (board.inImminentDanger) {
-        borderFn = Math.floor(board.elapsed / 100) % 2 == 0 ? chalk.inverse.hex("#FFA500") : chalk.inverse.red
-      } else if (board.inDanger) {
+        borderFn = Math.floor(board.elapsed / 50) % 2 == 0 ? chalk.inverse.hex("#FFA500") : chalk.inverse.red
+      } else if (inImminentDanger(board)) {
+        borderFn = chalk.inverse.hex("#FFA500")
+      } else if (board.inDanger || inDanger(board)) {
         borderFn = chalk.inverse.red
       }
       for (var row = 0; row < board.board.length; row++) {
@@ -205,11 +206,14 @@ export default function startGame({ refreshRate = 50, boardOptions = {}, startin
         "\nScore: " + board.score.toString() +
         `\n${" " + " *".repeat(board.piece.moves > 0 ? board.piece.moves : 0)}` +
         `\n${createProgressbar(31, board.piece.lock, board.lockDelay)} ${board.lockDelay}ms` +
+        `\n${addInfo(board)}` +
         `\n${messages.reduce((p, c) => p + "\n" + c[0], "")}`
 
       if (board.inImminentDanger) {
         stats = Math.floor(board.elapsed / 100) % 2 == 0 ? chalk.hex("#FFA500")(stats) : chalk.red(stats)
-      } else if (board.inDanger) {
+      } else if(inImminentDanger(board)) {
+        stats = chalk.hex("#FFA500")(stats)
+      } else if (board.inDanger || inDanger(board)) {
         stats = chalk.red(stats)
       }
 
@@ -218,10 +222,11 @@ export default function startGame({ refreshRate = 50, boardOptions = {}, startin
     }
     process.stdout.write("\x1b[?25l")
     var interval = setInterval(() => {
-      if(finished) return
+      if (finished) return
       process.stdout.cursorTo(0, 0)
       messages = messages.filter(a => a[1] + 1000 > board.elapsed)
-      if (board.gameOver) {
+      if (board.gameOver || customGameOver(board)) {
+        board.gameOver = true // incase custom game over calls
         return console.log(`Game Over 
 Score: ${board.score}
 Lines Cleared: ${board.linesCleared}
