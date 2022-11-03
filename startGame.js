@@ -44,6 +44,7 @@ export default function startGame({ refreshRate = 50, boardOptions = {}, startin
     var messages = []
     var softdrop = false
     var menuItem = 0
+    var paused = 0
     function cleanUp() {
       uIOhook.stop()
       clearInterval(interval)
@@ -62,6 +63,10 @@ export default function startGame({ refreshRate = 50, boardOptions = {}, startin
       if (finished) return
       if (!key) return
       switch (key.name) {
+        case "backspace":
+          paused = !paused
+          console.clear()
+          break;
         case "a":
         case "left":
           board.piece.shift(-1)
@@ -225,8 +230,11 @@ export default function startGame({ refreshRate = 50, boardOptions = {}, startin
       if (finished) return
       process.stdout.cursorTo(0, 0)
       messages = messages.filter(a => a[1] + 1000 > board.elapsed)
+      if (paused) {
+        return console.log("Paused. Press [BACKSPACE] to continue")
+      }
       if (board.gameOver || customGameOver(board)) {
-        board.gameOver = true // incase custom game over calls
+        board.gameOver = true // incase custom game over callss
         return console.log(`Game Over 
 Score: ${board.score}
 Lines Cleared: ${board.linesCleared}

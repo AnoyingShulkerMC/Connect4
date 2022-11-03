@@ -2,7 +2,12 @@ import clui from "./lib/clui.js"
 import keypress from "keypress"
 import startGame from "./startGame.js"
 process.stdin.setRawMode(true)
+Number.prototype.between = function (a, b) {
+  var min = Math.min(a, b),
+    max = Math.max(a, b);
 
+  return this > min && this < max;
+};
 var a = (new clui()).addButton("Marathon", async () => {
   a.frozenInput = true
   console.clear()
@@ -27,14 +32,14 @@ var a = (new clui()).addButton("Marathon", async () => {
     return ret += "]"
   }
   function millisecondsToTime(milli) {
-    var milliseconds = milli % 1000;
-    var seconds = Math.floor((milli / 1000) % 60);
+    var milliseconds = (milli % 1000).toString();
+    var seconds = Math.floor((milli / 1000) % 60).toString();
     var minutes = Math.floor((milli / (60 * 1000)) % 60);
 
-    return minutes + ":" + seconds + "." + milliseconds;
+    return minutes + ":" + seconds.padStart(2, "0") + "." + milliseconds.padStart(3, "0");
   }
   await startGame({
-startingLevel: 10,
+    startingLevel: 1,
     addInfo(board) {
       return `Time Remaining (${millisecondsToTime(120000 - board.elapsed)}) ${createProgressbar(31, 120000 - board.elapsed, 120000)}`
     },
@@ -42,12 +47,16 @@ startingLevel: 10,
       return board.elapsed >= 120000
     },
     inDanger(board) {
-      return board.elapsed >= 110000
+      return board.elapsed >= 110000 || board.elapsed.between(60000, 61000) || board.elapsed.between(90000, 91000)
     },
     inImminentDanger(board) {
-      return board.elapsed >= 115000 && Math.floor(board.elapsed/1000) % 2 == 1
+      return board.elapsed >= 110000 && Math.floor(board.elapsed/1000) % 2 == 1
     }
   })
+  a.frozenInput = false
+  process.stdin.setRawMode(true)
+  console.clear()
+  a.render()
 }).addButton("Quit", process.exit)
 a.render()
 keypress(process.stdin)
